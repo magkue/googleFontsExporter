@@ -9,4 +9,5 @@ services:
     environment:
       - FETCHING_INTERVAL_SECONDS=10
       - EXPORTER_PORT=9877
+      - TARGET_WEBSITE=${TARGET_WEBSITE}
       

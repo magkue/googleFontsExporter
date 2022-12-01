@@ -7,16 +7,16 @@ from prometheus_client import start_http_server, Enum
 from checker import Checker
 
 
-class AppMetrics:
+class Exporter:
 
-    def __init__(self, fetchingInterval=5, targetHost="https://ase.in.tum.de/lehrstuhl_1/"):
-        self.status = Enum("googleFonts", "Metric indicating if the target webste requests Google Fonts", states=[
+    def __init__(self, fetchingInterval=5, targetHost=""):
+        self.status = Enum("googleFonts", "Metric indicating if the target website requests Google Fonts", states=[
                            "ok - no requests detected", "requests detected"])
         self.fetchingInterval = fetchingInterval
         self.targetHost = targetHost
         self.checker = Checker(self.targetHost)
 
-    async def run_metrics_loop(self):
+    async def run(self):
         """Metric fetching loop"""
 
         while True:
@@ -40,12 +40,12 @@ async def main():
     exporterPort = int(os.getenv("EXPORTER_PORT", "9877"))
     targetHost = os.getenv("TARGET_WEBSITE")
 
-    app_metrics = AppMetrics(
+    exporter = Exporter(
         fetchingInterval=fetchingInterval,
         targetHost=targetHost
     )
     start_http_server(exporterPort)
-    await app_metrics.run_metrics_loop()
+    await exporter.run()
 
 if __name__ == "__main__":
     asyncio.run(main())
