@@ -3,18 +3,22 @@
 import asyncio
 import os
 import time
-from prometheus_client import start_http_server, Enum
+from prometheus_client import CollectorRegistry, start_http_server, Gauge
 from checker import Checker
 
 
 class Exporter:
 
-    def __init__(self, fetchingInterval=5, targetHost=""):
-        self.status = Enum("googleFonts", "Metric indicating if the target website requests Google Fonts", states=[
-                           "ok - no requests detected", "requests detected"])
+    def __init__(self, fetchingInterval=5, targetHosts=""):
+        # for targetHost in targetHosts:
+        self.gauge = Gauge("googleFontsFound", "Metric indicating if target requests Google Fonts", labelnames=[
+                           "exporter", "target"])
+        #    gauge.labels("googleFontsExporter", targetHost)
+        #    self.status[targetHost] = gauge
+
         self.fetchingInterval = fetchingInterval
-        self.targetHost = targetHost
-        self.checker = Checker(self.targetHost)
+        self.targetHosts = targetHosts
+        self.checker = Checker(self.targetHosts)
 
     async def run(self):
         """Metric fetching loop"""
@@ -29,8 +33,9 @@ class Exporter:
         """
 
         await self.checker.main()
-        self.status.state(
-            "requests detected" if self.checker.googleFontsFound else "ok - no requests detected")
+        for targetHost in self.targetHosts:
+            self.gauge.labels("googleFontsExporter", targetHost).set(
+                self.checker.googleFonts[targetHost])
 
 
 async def main():
@@ -38,11 +43,16 @@ async def main():
 
     fetchingInterval = int(os.getenv("FETCHING_INTERVAL_SECONDS", "5"))
     exporterPort = int(os.getenv("EXPORTER_PORT", "9877"))
-    targetHost = os.getenv("TARGET_WEBSITE")
+    targetHosts = []
+    with open("./configFile/targets.txt", 'r') as file:
+        targetHosts = file.read().split("\n")
 
+    print(targetHosts)
+    if len(targetHosts) == 0:
+        raise RuntimeError("Empty targetFile!")
     exporter = Exporter(
         fetchingInterval=fetchingInterval,
-        targetHost=targetHost
+        targetHosts=targetHosts
     )
     start_http_server(exporterPort)
     await exporter.run()

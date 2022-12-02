@@ -9,5 +9,12 @@ services:
     environment:
       - FETCHING_INTERVAL_SECONDS=10
       - EXPORTER_PORT=9877
-      - TARGET_WEBSITE=${TARGET_WEBSITE}
+    volumes:
+      - ./configFile:/app/configFile
+      - ./configFile/${CONFIG_FILE}:/app/configFile/targets.txt
+
+volumes:
+  configFile:
+
+ 
       
